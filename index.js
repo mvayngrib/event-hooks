@@ -3,6 +3,7 @@ const {
   co,
   isPromise,
   series,
+  waterfall,
   bubble,
   once
 } = require('./utils')
@@ -12,6 +13,11 @@ module.exports = function createHookedEmitter (obj) {
   const handlers = {}
   const defaults = {}
 
+  hooks.has = event => {
+    const fns = getHandlers(event)
+    return fns && fns.length
+  }
+
   hooks.fire = co(function* (event, ...args) {
     const fns = getHandlers(event)
     if (fns && fns.length) {
@@ -19,6 +25,17 @@ module.exports = function createHookedEmitter (obj) {
     }
 
     hooks.emit(event, ...args)
+  })
+
+  hooks.waterfall = co(function* (event, ...args) {
+    const fns = getHandlers(event)
+    let ret
+    if (fns && fns.length) {
+      ret = yield waterfall(fns, ...args)
+    }
+
+    hooks.emit(event, ret)
+    return ret
   })
 
   hooks.bubble = co(function* (event, ...args) {
@@ -31,15 +48,24 @@ module.exports = function createHookedEmitter (obj) {
     hooks.emit(event, ...args)
   })
 
-  hooks.hook = function (event, handler) {
+  hooks.hook = function (event, handler, unshift) {
     if (!(event in handlers)) {
       handlers[event] = []
     }
 
-    handlers[event].push(handler)
+    if (unshift) {
+      handlers[event].unshift(handler)
+    } else {
+      handlers[event].push(handler)
+    }
+
     return once(function unhook () {
-      handlers[event].splice(handlers[event].indexOf(handler), 1)
+      handlers[event] = handlers[event].filter(fn => fn !== handler)
     })
+  }
+
+  hooks.prependHook = function (event, handler) {
+    return hooks.hook(event, handler, true)
   }
 
   hooks.default = function (event, handler) {

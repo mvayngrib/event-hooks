@@ -13,6 +13,20 @@ const series = co(function* (fns, ...args) {
   }
 })
 
+const waterfall = co(function* (fns, ...args) {
+  let result
+  for (let fn of fns) {
+    result = fn.apply(this, args)
+    if (isPromise(result)) {
+      result = yield result
+    }
+
+    args = [result]
+  }
+
+  return result
+})
+
 const bubble = co(function* (fns, ...args) {
   for (let i = 0; i < fns.length; i++) {
     let fn = fns[i]
@@ -30,6 +44,7 @@ module.exports = {
   co,
   series,
   bubble,
+  waterfall,
   isPromise,
   once
 }

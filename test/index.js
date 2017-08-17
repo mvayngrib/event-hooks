@@ -48,6 +48,38 @@ test('hooks', loudCo(function* (t) {
   t.end()
 }))
 
+test('waterfall', loudCo(function* (t) {
+  const hooks = createHookedEmitter()
+  hooks.hook('a', arg => {
+    t.equal(arg, 1)
+    return arg * 2
+  })
+
+  hooks.hook('a', arg => {
+    t.equal(arg, 2)
+    return arg * 3
+  })
+
+  t.equal(yield hooks.waterfall('a', 1), 6)
+  t.end()
+}))
+
+test('prepend', loudCo(function* (t) {
+  const hooks = createHookedEmitter()
+  hooks.hook('a', arg => {
+    t.equal(arg, 2)
+    return arg *= 2
+  })
+
+  hooks.prependHook('a', arg => {
+    t.equal(arg, 1)
+    return arg *= 2
+  })
+
+  t.equal(yield hooks.waterfall('a', 1), 4)
+  t.end()
+}))
+
 function loudCo (gen) {
   return co(function* (...args) {
     try {
