@@ -61,6 +61,19 @@ test('waterfall', loudCo(function* (t) {
   })
 
   t.equal(yield hooks.waterfall('a', 1), 6)
+
+  t.equal(yield hooks.waterfall('b', 1), 1)
+  try {
+    yield hooks.waterfall('b', 1, 2)
+    t.fail('expected error')
+  } catch (err) {
+    t.ok(/pass through/.test(err.message))
+  }
+
+  hooks.hook('b', (a, b) => a * b)
+
+  // multiple args supported
+  t.equal(yield hooks.waterfall('b', 2, 3), 6)
   t.end()
 }))
 

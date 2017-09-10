@@ -32,6 +32,12 @@ module.exports = function createHookedEmitter (obj) {
     let ret
     if (fns && fns.length) {
       ret = yield waterfall(fns, ...args)
+    } else {
+      if (args.length > 1) {
+        throw new Error('cannot pass through more than one arg')
+      }
+
+      ret = args[0]
     }
 
     hooks.emit(event, ret)
